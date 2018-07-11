@@ -29,11 +29,14 @@ export function getBalance() {
   return async function(dispatch) {
     const { web3 } = origin.contractService
     const account = await origin.contractService.currentAccount()
-    const balance = await web3.eth.getBalance(account)
+    if (account)
+    {
+      const balance = await web3.eth.getBalance(account)
 
-    dispatch({
-      type: WalletConstants.BALANCE_SUCCESS,
-      balance: web3.utils.fromWei(balance, 'ether')
-    })
+      dispatch({
+        type: WalletConstants.BALANCE_SUCCESS,
+        balance: web3.utils.fromWei(balance, 'ether')
+      })
+    }
   }
 }
