@@ -77,9 +77,9 @@ class ListingsDetail extends Component {
   async loadListing() {
     try {
       const listing = await origin.listings.get(this.props.listingId)
-      const { purchasesLength } = listing
-      const translatedListing = translateListingCategory(listing.ipfsData)
-      const obj = Object.assign({}, translatedListing, { loading: false, purchasesLength })
+      const { purchasesLength, ipfsData, priceEth } = listing
+      const translatedListing = translateListingCategory(ipfsData)
+      const obj = Object.assign({}, translatedListing, { loading: false, purchasesLength, priceEth })
       this.setState(obj)
     } catch (error) {
       this.props.showAlert(this.props.formatMessage(this.intlMessages.loadingError))
@@ -150,7 +150,7 @@ class ListingsDetail extends Component {
     if (web3.givenProvider && this.props.web3Account) {
       this.setState({ step: this.STEP.METAMASK })
       const unitsToBuy = 1
-      const totalPrice = (unitsToBuy * this.state.price)
+      const totalPrice = (unitsToBuy * this.state.priceEth)
       try {
         this.setState({ step: this.STEP.PROCESSING })
         const { created, transactionReceipt } = await origin.listings.buy(this.state.address, unitsToBuy, totalPrice, this.props.updateTransaction)
@@ -358,7 +358,7 @@ class ListingsDetail extends Component {
               */}
             </div>
             <div className="col-12 col-md-4">
-              {!!this.state.price && !!parseFloat(this.state.price) &&
+              {!!this.state.priceEth && !!parseFloat(this.state.priceEth) &&
                 <div className="buy-box placehold">
                   <div className="price d-flex justify-content-between">
                     <div>
@@ -368,7 +368,7 @@ class ListingsDetail extends Component {
                       />
                     </div>
                     <div className="text-right">
-                      {Number(this.state.price).toLocaleString(undefined, {minimumFractionDigits: 3})}
+                      {Number(this.state.priceEth).toLocaleString(undefined, {minimumFractionDigits: 3})}
                       &nbsp;
                       <FormattedMessage
                         id={ 'listing-detail.ethereumCurrencyAbbrev' }

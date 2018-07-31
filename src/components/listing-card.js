@@ -21,9 +21,10 @@ class ListingCard extends Component {
   async componentDidMount() {
     try {
       const listing = await origin.listings.get(this.props.listingId)
-      const translatedListing = translateListingCategory(listing.ipfsData)
+      const { ipfsData, priceEth } = listing
+      const translatedListing = translateListingCategory(ipfsData)
       if (!this.props.hideList.includes(this.props.listingId)) {
-        const obj = Object.assign({}, translatedListing, { loading: false })
+        const obj = Object.assign({}, translatedListing, { loading: false, priceEth })
 
         this.setState(obj)
       } else {
@@ -35,7 +36,7 @@ class ListingCard extends Component {
   }
 
   render() {
-    const { category, loading, name, pictures, price, unitsAvailable, shouldRender } = this.state
+    const { category, loading, name, pictures, priceEth, unitsAvailable, shouldRender } = this.state
     const { listingId } = this.props
     const photo = pictures && pictures.length && (new URL(pictures[0])).protocol === "data:" && pictures[0]
 
@@ -68,7 +69,7 @@ class ListingCard extends Component {
             }
           </div>
           <h2 className="title placehold text-truncate">{name}</h2>
-          {price > 0 && <ListingCardPrices price={price} unitsAvailable={unitsAvailable} />}
+          {priceEth > 0 && <ListingCardPrices price={priceEth} unitsAvailable={unitsAvailable} />}
         </Link>
       </div>
     )
