@@ -393,13 +393,12 @@ class ListingsDetail extends Component {
                                       {Number(price).toLocaleString(undefined, {minimumFractionDigits: 3})} ETH
                                     </div>
                                   </div> */}
-                  {!this.state.loading && this.state.address &&
+                  {!this.state.loading &&
                     <div className="btn-container">
                       {!!unitsAvailable && !userIsSeller &&
                         <button
                           className="btn btn-primary"
                           onClick={this.handleBuyClicked}
-                          disabled={!this.state.address}
                           onMouseDown={e => e.preventDefault()}
                         >
                           <FormattedMessage
