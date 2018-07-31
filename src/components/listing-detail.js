@@ -77,9 +77,13 @@ class ListingsDetail extends Component {
   async loadListing() {
     try {
       const listing = await origin.listings.get(this.props.listingId)
-      const { purchasesLength, ipfsData, priceEth } = listing
+      const { purchasesLength, ipfsData, priceEth, sellerAddress, seller } = listing
       const translatedListing = translateListingCategory(ipfsData)
-      const obj = Object.assign({}, translatedListing, { loading: false, purchasesLength, priceEth })
+      const obj = Object.assign(
+        {},
+        translatedListing,
+        { loading: false, purchasesLength, priceEth, sellerAddress }
+      )
       this.setState(obj)
     } catch (error) {
       this.props.showAlert(this.props.formatMessage(this.intlMessages.loadingError))
