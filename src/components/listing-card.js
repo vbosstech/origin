@@ -21,8 +21,8 @@ class ListingCard extends Component {
   async componentDidMount() {
     try {
       const listing = await origin.listings.getByIndex(this.props.listingId)
-      const translatedListing = translateListingCategory(listing)
-      if (!this.props.hideList.includes(translatedListing.address)) {
+      const translatedListing = translateListingCategory(listing.ipfsData)
+      if (!this.props.hideList.includes(this.props.listingId)) {
         const obj = Object.assign({}, translatedListing, { loading: false })
 
         this.setState(obj)
