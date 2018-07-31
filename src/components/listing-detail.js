@@ -61,7 +61,7 @@ class ListingsDetail extends Component {
   }
 
   async componentWillMount() {
-    if (this.props.listingAddress) {
+    if (this.props.listingId) {
       // Load from IPFS
       await this.loadListing()
       await this.loadPurchases()
@@ -76,27 +76,27 @@ class ListingsDetail extends Component {
 
   async loadListing() {
     try {
-      const listing = await origin.listings.get(this.props.listingAddress)
-      const translatedListing = translateListingCategory(listing)
-      const obj = Object.assign({}, translatedListing, { loading: false })
+      const listing = await origin.listings.get(this.props.listingId)
+      const { purchasesLength } = listing
+      const translatedListing = translateListingCategory(listing.ipfsData)
+      const obj = Object.assign({}, translatedListing, { loading: false, purchasesLength })
       this.setState(obj)
     } catch (error) {
       this.props.showAlert(this.props.formatMessage(this.intlMessages.loadingError))
-      console.error(`Error fetching contract or IPFS info for listing: ${this.props.listingAddress}`)
+      console.error(`Error fetching contract or IPFS info for listing: ${this.props.listingId}`)
       console.error(error)
     }
   }
 
   async loadPurchases() {
-    const { listingAddress } = this.props
+    const { listingId } = this.props
+    const { purchasesLength } = this.state
 
     try {
-      const length = await origin.listings.purchasesLength(listingAddress)
-      console.log('Purchase count:', length)
+      console.log('Purchase count:', purchasesLength)
 
-      for (let i = 0; i < length; i++) {
-        let purchaseAddress = await origin.listings.purchaseAddressByIndex(listingAddress, i)
-        let purchase = await origin.purchases.get(purchaseAddress)
+      for (let i = 0; i < purchasesLength; i++) {
+        const purchase = await origin.purchases.get(listingId, i)
         console.log('Purchase:', purchase)
 
         this.setState((prevState) => {
@@ -104,7 +104,7 @@ class ListingsDetail extends Component {
         })
       }
     } catch(error) {
-      console.error(`Error fetching purchases for listing: ${listingAddress}`)
+      console.error(`Error fetching purchases for listing: ${listingId}`)
       console.error(error)
     }
   }
@@ -113,8 +113,9 @@ class ListingsDetail extends Component {
     const { purchases } = this.state
 
     try {
+      const { listingId } = this.props
       const reviews = await Promise.all(
-        purchases.map(p => origin.reviews.find({ purchaseAddress: p.address }))
+        purchases.map((purchase, purchaseId) => origin.reviews.find({ listingId, purchaseId }))
       )
       const flattened = [].concat(...reviews)
       console.log('Reviews:', flattened)
@@ -126,7 +127,7 @@ class ListingsDetail extends Component {
   }
 
   async componentWillMount() {
-    if (this.props.listingAddress) {
+    if (this.props.listingId) {
       // Load from IPFS
       await this.loadListing()
       await this.loadPurchases()
@@ -419,7 +420,7 @@ class ListingsDetail extends Component {
                   }
                 </div>
               }
-              {this.state.sellerAddress && <UserCard title="seller" listingAddress={this.props.listingAddress} userAddress={this.state.sellerAddress} />}
+              {this.state.sellerAddress && <UserCard title="seller" listingId={this.props.listingId} userAddress={this.state.sellerAddress} />}
             </div>
           </div>
           {this.props.withReviews &&
