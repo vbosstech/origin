@@ -12,8 +12,6 @@ class MyPurchases extends Component {
   constructor(props) {
     super(props)
 
-    this.loadListing = this.loadListing.bind(this)
-    this.loadPurchase = this.loadPurchase.bind(this)
     this.state = { filter: 'pending', purchases: [], loading: true }
   }
 
@@ -23,90 +21,36 @@ class MyPurchases extends Component {
     }
   }
 
-  /*
-  * WARNING: These functions don't actually return what they might imply.
-  * They use return statements to chain together async calls. Oops.
-  *
-  * For now, we mock a getByPurchaserAddress request by fetching all
-  * listings individually and fetching all related purchases individually.
-  */
-
-  async getListingIds() {
-    try {
-      const ids = await origin.listings.allIds()
-
-      return await Promise.all(ids.map(this.loadListing))
-    } catch(error) {
-      console.error('Error fetching listing ids')
-    }
-  }
-
-  async getPurchaseAddress(addr, i) {
-    try {
-      const purchAddr = await origin.listings.purchaseAddressByIndex(addr, i)
-
-      return this.loadPurchase(purchAddr)
-    } catch(error) {
-      console.error(`Error fetching purchase address at: ${i}`)
-    }
-  }
-
-  async getPurchasesLength(addr) {
-    try {
-      const len = await origin.listings.purchasesLength(addr)
-
-      if (!len) {
-        return len
-      }
-
-      return await Promise.all([...Array(len).keys()].map(i => this.getPurchaseAddress(addr, i)))
-    } catch(error) {
-      console.error(`Error fetching purchases length for listing: ${addr}`)
-    }
-  }
-
-  async loadListing(id) {
-    try {
-      const listing = await origin.listings.getByIndex(id)
-
-      return this.getPurchasesLength(listing.address)
-    } catch(error) {
-      console.error(`Error fetching contract or IPFS info for listingId: ${id}`)
-    }
-  }
-
-  async loadPurchase(addr) {
-    try {
-      const purchase = await origin.purchases.get(addr)
-      
-      if (purchase.buyerAddress === this.props.web3Account) {
-        const purchases = [...this.state.purchases, purchase]
-
-        this.setState({ purchases })
-      }
-
-      return purchase
-    } catch(error) {
-      console.error(`Error fetching purchase: ${addr}`, error)
-    }
-  }
-
   async componentWillMount() {
-    await this.getListingIds()
-
+    const listingIds = await origin.listings.allIds()
+    const purchasesByListing = await Promise.all(listingIds.map(listingId => {
+      return origin.listings.getPurchases(listingId)
+    }))
+    const withListingIds = purchasesByListing.map((purchases, listingId) => {
+      return purchases.map(purchase => {
+        purchase.listingId = listingId
+        return purchase
+      })
+    })
+    const purchasesFlattened = [].concat.apply([], withListingIds)
+    this.setState({ purchases: purchasesFlattened })
     this.setState({ loading: false })
   }
 
   render() {
+    const { web3Account } = this.props
     const { filter, loading, purchases } = this.state
+    const buyerPurchases = purchases.filter((purchase) => {
+      return purchase.buyerAddress === web3Account
+    })
     const filteredPurchases = (() => {
       switch(filter) {
         case 'pending':
-          return purchases.filter(p => p.stage !== 'complete')
+          return buyerPurchases.filter(p => p.stage !== 'SELLER_FINALIZED')
         case 'complete':
-          return purchases.filter(p => p.stage === 'complete')
+          return buyerPurchases.filter(p => p.stage === 'SELLER_FINALIZED')
         default:
-          return purchases
+          return buyerPurchases
       }
     })()
 
@@ -124,7 +68,7 @@ class MyPurchases extends Component {
                 </h1>
               </div>
             </div>
-          }  
+          }
           {!loading && !purchases.length &&
             <div className="row">
               <div className="col-12 text-center">
@@ -160,7 +104,7 @@ class MyPurchases extends Component {
                   </div>
                 </div>
                 <div className="row">
-                  <div className="col-12 col-md-3">  
+                  <div className="col-12 col-md-3">
                     <div className="filters list-group flex-row flex-md-column">
                       <a className={`list-group-item list-group-item-action${filter === 'pending' ? ' active' : ''}`}
                         onClick={() => this.setState({ filter: 'pending' })}>
@@ -187,13 +131,13 @@ class MyPurchases extends Component {
                   </div>
                   <div className="col-12 col-md-9">
                     <div className="my-listings-list">
-                      {filteredPurchases.map(p => <MyPurchaseCard key={`my-purchase-${p.address}`} purchase={p} />)}
+                      {filteredPurchases.map((purchase, purchaseId) => <MyPurchaseCard key={`my-purchase-${purchaseId}`} purchase={purchase} purchaseId={purchaseId} listingId={purchase.listingId} />)}
                     </div>
                   </div>
                 </div>
               </div>
-            </div>  
-          } 
+            </div>
+          }
         </div>
       </div>
     )
