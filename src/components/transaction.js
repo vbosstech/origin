@@ -25,12 +25,14 @@ class Transaction extends Component {
       let listing, purchase
 
       if (transactionTypeKey === 'buyListing') {
-        purchase = await origin.purchases.get(events[transactionType].returnValues[0])
-        listing = await origin.listings.get(purchase.listingAddress)
+        const listingId = events[transactionType].returnValues._listingIndex
+        const purchaseId = events[transactionType].returnValues._purchaseIndex
+        purchase = await origin.purchases.get(listingId, purchaseId)
+        listing = await origin.listings.get(listingId)
       } else if (transactionTypeKey === 'closeListing') {
         listing = await origin.listings.get(events[transactionType].returnValues._address)
       } else if (transactionTypeKey === 'createListing') {
-        listing = await origin.listings.get(events[transactionType].returnValues._address)
+        listing = await origin.listings.get(events[transactionType].returnValues._listingIndex)
       } else if (['confirmReceipt', 'confirmShipped', 'getPayout'].includes(transactionTypeKey)) {
         purchase = await origin.purchases.get(events[transactionType].address)
         listing = await origin.listings.get(purchase.listingAddress)

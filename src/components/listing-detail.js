@@ -157,7 +157,12 @@ class ListingsDetail extends Component {
       const totalPrice = (unitsToBuy * this.state.priceEth)
       try {
         this.setState({ step: this.STEP.PROCESSING })
-        const { created, transactionReceipt } = await origin.listings.buy(this.state.address, unitsToBuy, totalPrice, this.props.updateTransaction)
+        const { created, transactionReceipt } = await origin.listings.requestPurchase(
+          this.props.listingId,
+          { units: unitsToBuy, purchaseType: 'unit' },
+          Number(this.state.priceWei),
+          this.props.updateTransaction
+        )
         this.props.upsertTransaction({
           ...transactionReceipt,
           created,

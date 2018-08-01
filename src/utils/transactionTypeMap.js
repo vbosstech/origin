@@ -1,9 +1,9 @@
 const transactionTypeMap = {
-  buyListing: 'ListingPurchased',
+  buyListing: 'PurchaseChange',
   closeListing: 'ListingChange',
   confirmReceipt: 'PurchaseChange',
   confirmShipped: 'PurchaseChange',
-  createListing: 'NewListing',
+  createListing: 'ListingChange',
   getPayout: 'PurchaseChange',
 }
 
