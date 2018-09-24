@@ -43,8 +43,38 @@ class Arbitration extends Component {
     this.validateUser()
   }
 
-  async handleRuling() {
-    alert('To Do')
+  async handleRuling(winner) {
+    const { purchase } = this.state
+    let ruling
+    let refund
+
+    switch(winner) {
+    case 'seller':
+      ruling = 0
+      refund = 0
+      break
+    case 'buyer':
+      ruling = 1
+      refund = purchase.totalPrice.amount
+      break
+    }
+
+    try {
+      await origin.marketplace.initiateDispute(
+        purchase.id,
+        {},
+        ruling,
+        refund,
+        (confirmationCount, transactionReceipt) => {
+
+          console.log('==================== transactionReceipt: ', transactionReceipt)
+          this.loadPurchase()
+
+        }
+      )
+    } catch(error) {
+      throw error
+    }
   }
 
   async loadPurchase() {
@@ -328,7 +358,7 @@ class Arbitration extends Component {
                       messages={messages.filter(({ content, conversationId }) => content && conversationId === sellerConversationId).sort((a, b) => (a.index < b.index ? -1 : 1))}
                     />
                   </div>
-                  <button className="btn btn-lg btn-info mt-4" onClick={this.handleRuling}>Rule In Favor Of Seller</button>
+                  <button className="btn btn-lg btn-info mt-4" onClick={() => this.handleRuling('seller')}>Rule In Favor Of Seller</button>
                 </div>
               }
               {buyer.address &&
@@ -345,7 +375,7 @@ class Arbitration extends Component {
                       messages={messages.filter(({ content, conversationId }) => content && conversationId === buyerConversationId).sort((a, b) => (a.index < b.index ? -1 : 1))}
                     />
                   </div>
-                  <button className="btn btn-lg btn-info mt-4" onClick={this.handleRuling}>Rule In Favor Of Buyer</button>
+                  <button className="btn btn-lg btn-info mt-4" onClick={() => this.handleRuling('buyer')}>Rule In Favor Of Buyer</button>
                 </div>
               }
             </div>
