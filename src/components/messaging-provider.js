@@ -142,7 +142,7 @@ class MessagingProvider extends Component {
         roomId,
         senderAddress: ETH_ADDRESS
       }
-      message.status = origin.messaging.getStatus(message, web3Account)
+      message.status = origin.messaging.getStatus(message)
       this.props.addMessage(message)
     }
     // on messaging enabled
@@ -175,7 +175,7 @@ class MessagingProvider extends Component {
         roomId,
         senderAddress: ETH_ADDRESS
       }
-      message.status = origin.messaging.getStatus(message, web3Account)
+      message.status = origin.messaging.getStatus(message)
       this.props.addMessage(message)
     }
   }
