@@ -46,7 +46,7 @@ async function deployContracts(deployer) {
   )
   await createListing(
     marketplace00,
-    '0x0f70fe3695f72660752fde3eb6d6aa02290758bc7cf6111f4e1e6bcb53c42633',
+    '0x0a4486d8a3093ee6bfa53cc29a2492e9f182e8512caba7151fcb734452637af7',
     Seller
   )
   await createListing(

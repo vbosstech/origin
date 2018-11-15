@@ -116,28 +116,47 @@ export default class Marketplace {
     const offerIds = await this.resolver.getOfferIds(listingId, opts)
     if (opts.idsOnly) {
       return offerIds
-    } else {
-      const allOffers = await Promise.all(
-        offerIds.map(async offerId => {
-          try {
-            return await this.getOffer(offerId)
-          } catch(e) {
-            // TODO(John) - handle this error better. It's tricky b/c it happens in a map
-            // and we want to throw the error, but we don't want the whole getOffers() call to fail.
-            // We want it to return the offers that it was able to get but still let us know something failed.
-            console.error(
-              `Error getting offer data for offer ${
-                offerId
-              }: ${e}`
-            )
-            return null
-          }
-        })
-      )
-
-      // filter out invalid offers
-      return allOffers.filter(offer => Boolean(offer))
     }
+
+    const allOffers = await Promise.all(
+      offerIds.map(async offerId => {
+        try {
+          return await this.getOffer(offerId)
+        } catch(e) {
+          // TODO(John) - handle this error better. It's tricky b/c it happens in a map
+          // and we want to throw the error, but we don't want the whole getOffers() call to fail.
+          // We want it to return the offers that it was able to get but still let us know something failed.
+          console.error(
+            `Error getting offer data for offer ${
+              offerId
+            }: ${e}`
+          )
+          return null
+        }
+      })
+    )
+
+    // Filter out invalid offers
+    const filteredOffers = allOffers.filter(offer => Boolean(offer))
+
+    // Filter out offers for which the units purchased exceeds the units
+    // available at the time of the offer.
+    //
+    // TODO: handle edits of unitsAvailable
+    const listing = await this.getListing(listingId)
+    let unitsAvailable = listing.unitsTotal
+    return Object.keys(filteredOffers).reduce((offers, offerId) => {
+      const offer = filteredOffers[offerId]
+      if (offer.unitsPurchased > unitsAvailable) {
+        return offers
+      }
+
+      if (offer.status !== 'created' && offer.status !== 'withdrawn') {
+        // TODO: handle instant purchases
+        unitsAvailable -= offer.unitsPurchased
+      }
+      return [...offers, offer]
+    }, [])
   }
 
   /**
@@ -182,7 +201,8 @@ export default class Marketplace {
           throw new Error('Invalid offer: currency does not match listing')
         }
 
-        if (BigNumber(listingPrice).isGreaterThan(BigNumber(chainOffer.value))) {
+        const listingValue = BigNumber(listingPrice).multipliedBy(ipfsOffer.unitsPurchased)
+        if (listingValue.isGreaterThan(BigNumber(chainOffer.value))) {
           throw new Error('Invalid offer: insufficient offer amount for listing')
         }
       }
@@ -455,6 +475,21 @@ export default class Marketplace {
     const notifications = this.store.get(storeKeys.notificationStatuses)
     notifications[id] = status
     this.store.set(storeKeys.notificationStatuses, notifications)
+  }
+
+  unitsAvailable(listing, offers) {
+    // TODO: return error for fractional usage listings
+    const unitsSold = Object.keys(offers).reduce((acc, offerId) => {
+      // TODO: handle instant purchases
+      if (
+        offers[offerId].status !== 'withdrawn' &&
+        offers[offerId].status !== 'created'
+      ) {
+        return acc + offers[offerId].unitsPurchased
+      }
+      return acc
+    }, 0)
+    return listing.unitsTotal - unitsSold
   }
 
   async getTokenAddress() {

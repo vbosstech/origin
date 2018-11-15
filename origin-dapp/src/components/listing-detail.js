@@ -89,8 +89,13 @@ class ListingsDetail extends Component {
   async componentWillMount() {
     if (this.props.listingId) {
       // Load from IPFS
-      await this.loadListing()
-      await this.loadOffers()
+      const listing = await this.loadListing()
+      const offers = await this.loadOffers()
+      console.log('listing:', listing)
+      this.setState({
+        unitsRemaining: await origin.marketplace.unitsAvailable(listing, offers)
+      })
+
     } else if (this.props.listingJson) {
       const obj = Object.assign({}, this.props.listingJson, { loading: false })
       // Listing json passed in directly
@@ -109,7 +114,9 @@ class ListingsDetail extends Component {
     }
   }
 
-  async handleMakeOffer(skip, slotsToReserve) {
+  async handleMakeOffer(skip, slotsToReserve, quantity) {
+    quantity = 2 // TODO: remove when done testing
+
     // onboard if no identity, purchases, and not already completed
     const shouldOnboard =
       !this.props.profile.strength &&
@@ -134,7 +141,7 @@ class ListingsDetail extends Component {
       const price =
         isFractional ?
           slots.reduce((totalPrice, nextPrice) => totalPrice + nextPrice.price, 0).toString() :
-          this.state.price
+          (this.state.price * quantity).toString()
 
       try {
         const offerData = {
@@ -150,13 +157,12 @@ class ListingsDetail extends Component {
           },
           // Set the finalization time to ~1 year after the offer is accepted.
           // This is the window during which the buyer may file a dispute.
-          finalizes: 365 * 24 * 60 * 60
+          finalizes: 365 * 24 * 60 * 60,
+          unitsPurchased: quantity
         }
 
         if (isFractional) {
           offerData.slots = prepareSlotsToSave(slots)
-        } else {
-          offerData.unitsPurchased = 1
         }
 
         const transactionReceipt = await origin.marketplace.makeOffer(
@@ -226,6 +232,7 @@ class ListingsDetail extends Component {
         ...listing,
         loading: false
       })
+      return listing
     } catch (error) {
       this.props.showAlert(
         this.props.intl.formatMessage(this.intlMessages.loadingError)
@@ -243,6 +250,7 @@ class ListingsDetail extends Component {
     try {
       const offers = await origin.marketplace.getOffers(this.props.listingId)
       this.setState({ offers })
+      return offers
     } catch (error) {
       console.error(
         `Error fetching offers for listing: ${this.props.listingId}`
@@ -278,8 +286,8 @@ class ListingsDetail extends Component {
       status,
       step,
       schemaType,
-      featuredImageIdx
-      // unitsRemaining
+      featuredImageIdx,
+      unitsRemaining
     } = this.state
     const currentOffer = offers.find(o => {
       const availability = offerStatusToListingAvailability(o.status)
@@ -299,7 +307,7 @@ class ListingsDetail extends Component {
      * pass along featured information from elasticsearch, but that would increase the code
      * complexity.
      *
-     * Deployed versions of the DApp will always have ENABLE_PERFORMANCE_MODE set to 
+     * Deployed versions of the DApp will always have ENABLE_PERFORMANCE_MODE set to
      * true, and show "featured" badge.
      */
     const showFeaturedBadge = display === 'featured' && isAvailable
@@ -551,6 +559,7 @@ class ListingsDetail extends Component {
                       </div>
                     </div>
                   */}
+                  <p>Quantity: {unitsRemaining}</p> {/* DEBUG ONLY */}
                   {!loading && (
                     <div className="btn-container">
                       {!userIsSeller && (
@@ -794,7 +803,7 @@ class ListingsDetail extends Component {
             </div>
             { !this.state.loading && this.state.listingType === 'fractional' &&
               <div className="col-12">
-                <Calendar 
+                <Calendar
                   slots={ this.state.slots }
                   offers={ this.state.offers }
                   userType="buyer"

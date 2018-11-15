@@ -17,13 +17,18 @@ class ListingCard extends Component {
     this.state = {
       loading: true,
       display: 'normal',
-      offers: []
+      offers: [],
+      unitsRemaining: 1
     }
   }
 
   async componentWillMount() {
     await this.loadListing()
     await this.loadOffers()
+    this.setState({
+      unitsRemaining: origin.marketplace.unitsAvailable(this.state.listing, this.state.offers)
+    })
+    console.log('units remaining: ', this.state)
   }
 
   // componentDidUpdate(prevProps, prevState) {
@@ -47,6 +52,7 @@ class ListingCard extends Component {
       this.setState({
         // boostLevelIsPastSomeThreshold: listing.boostValue > 0,
         ...listing,
+        listing,
         loading: false
       })
     } catch (error) {

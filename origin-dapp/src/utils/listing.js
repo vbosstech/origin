@@ -72,6 +72,7 @@ export function dappFormDataToOriginListing(formData) {
  * @return {object} DApp compatible listing object.
  */
 export function originToDAppListing(originListing) {
+  console.log('origin listing:', originListing)
   const commission = originListing.commission
     ? parseFloat(originListing.commission.amount)
     : 0
@@ -90,10 +91,10 @@ export function originToDAppListing(originListing) {
     price: originListing.price && originListing.price.amount,
     boostValue: commission,
     boostLevel: getBoostLevel(commission),
-    unitsRemaining: originListing.unitsRemaining,
     ipfsHash: originListing.ipfs.hash,
     listingType: originListing.type,
-    slots: originListing.slots
+    slots: originListing.slots,
+    unitsTotal: originListing.unitsTotal
   }
 }
 
