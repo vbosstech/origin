@@ -150,7 +150,6 @@ export default class Marketplace {
       if (offer.unitsPurchased > unitsAvailable) {
         return offers
       }
-
       if (offer.status !== 'created' && offer.status !== 'withdrawn') {
         // TODO: handle instant purchases
         unitsAvailable -= offer.unitsPurchased

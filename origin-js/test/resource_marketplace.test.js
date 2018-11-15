@@ -15,6 +15,7 @@ import { OFFER_DATA_TYPE } from '../src/ipfsInterface/store'
 
 // oddly changing an imported object here can affect other or subsequent tests that import the same file
 const listingData = Object.assign({}, listingValid)
+const multiUnitListingData = Object.assign({}, listingValid, { unitsTotal: 2 })
 const offerData = Object.assign({}, offerValid)
 const reviewData = Object.assign({}, reviewValid)
 
@@ -493,6 +494,36 @@ describe('Marketplace Resource', function() {
       expect(offer.status).to.be.equal('ruling')
     })
   })
+
+  describe('multi-unit (quantity=2)', () => {
+    beforeEach(async () => {
+      await marketplace.createListing(multiUnitListingData)
+      const listings = await marketplace.getListings({ idsOnly: true })
+      expect(listings).to.have.lengthOf(2)
+    })
+
+    it('should allow 2 offers to be accepted', async () => {
+      // Create first offer.
+      await marketplace.makeOffer('999-000-1', offerData)
+      let offer1 = await marketplace.getOffer('999-000-1-0')
+      expect(offer1.status).to.equal('created')
+
+      await marketplace.acceptOffer('999-000-1-0')
+      offer1 = await marketplace.getOffer('999-000-1-0')
+      expect(offer1.status).to.equal('accepted')
+      validateOffer(offer1)
+
+      // Create second offer.
+      await marketplace.makeOffer('999-000-1', offerData)
+      let offer2 = await marketplace.getOffer('999-000-1-1')
+      expect(offer2.status).to.equal('created')
+
+      await marketplace.acceptOffer('999-000-1-1')
+      offer2 = await marketplace.getOffer('999-000-1-1')
+      expect(offer2.status).to.equal('accepted')
+      validateOffer(offer2)
+    })
+  })
 })
 
 describe('Marketplace Resource - Performance mode', function() {
@@ -538,4 +569,3 @@ describe('Marketplace Resource - Performance mode', function() {
   })
 
 })
-
